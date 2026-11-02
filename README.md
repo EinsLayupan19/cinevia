@@ -33,6 +33,20 @@ On macOS or Linux, use `python3` instead of `py` and `source .venv/bin/activate`
 
 Create an account on the first screen, then sign in.
 
+### Demo account
+
+For presentations, create a ready-made account with a few favorites and searches already saved:
+
+```bash
+py create_demo_account.py
+```
+
+| Username | Password |
+|---|---|
+| `demo` | `CineviaDemo2026` |
+
+It is a normal account: the password is stored only as a salted PBKDF2 hash, and the script is safe to run again. Use it for demos only, never with a real password.
+
 ## Features
 
 - **Sign in / Create account** screen with live poster art.
