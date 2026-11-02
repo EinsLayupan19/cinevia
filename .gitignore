@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+# Runtime files: the user database and caches
+/data/
