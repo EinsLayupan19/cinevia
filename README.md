@@ -2,6 +2,13 @@
 
 A Python desktop app for browsing trending **movies and TV shows** and watching their **trailers and teasers**, with user accounts. Built for ITL313-18 (SIA 2 Lab) Final Term Mini Project, **Media and Entertainment: Movies and TV Shows**.
 
+## Group members
+
+| Name | Section |
+|---|---|
+| Zirk Eins B. Layupan | 1BSIT-3 |
+| Nathaniel Coronado | 1BSIT-3 |
+
 ## How it meets the project requirements
 
 | Requirement | Where |
