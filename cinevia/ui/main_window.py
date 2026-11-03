@@ -79,7 +79,6 @@ class Sidebar(QFrame):
         br.addWidget(mark)
         self.word = QLabel()
         self.word.setObjectName("logoWord")
-        self.word.setTextFormat(Qt.TextFormat.RichText)
         br.addWidget(self.word)
         br.addStretch()
         brand.setFixedHeight(46)
@@ -116,7 +115,7 @@ class Sidebar(QFrame):
         credits.setOpenExternalLinks(True)
         cc.addWidget(credits)
         cc.addSpacing(4)
-        explore = button("EXPLORE ALL TITLES", "upgradeLink")
+        explore = button("Explore all titles", "upgradeLink")
         explore.clicked.connect(lambda: window.go("discover"))
         cc.addWidget(explore)
         col.addWidget(card)
@@ -140,7 +139,7 @@ class Sidebar(QFrame):
     def restyle(self) -> None:
         if hasattr(self, "credits"):
             self.credits.setText(self._credits_html())
-        self.word.setText('CINE<br><span style="color:#e50914; font-weight:700">VIA</span>')
+        self.word.setText("Cinevia")
         self.logout.setIcon(icon("sign-out", "muted"))
         self.set_active(self.window_.route.page if hasattr(self.window_, "route") else "home")
 

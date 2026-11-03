@@ -89,6 +89,6 @@ cinevia/
   app.py                starts the app: login, then the main window
   data/                 iTunes and TVmaze clients, caching, Discover filters
   ui/                   theme, login, main window, pages, hero, player, cards
-assets/                 logo and fonts (Oswald, DM Sans; SIL Open Font License)
+assets/                 logo and the Geist font (SIL Open Font License)
 tests/                  unit tests
 ```

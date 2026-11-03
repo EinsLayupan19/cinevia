@@ -16,8 +16,6 @@ from .images import images
 from .theme import theme
 from .widgets import (
     ClampLabel,
-    Eyebrow,
-    OutlineTitle,
     button,
     chips,
     clear_layout,
@@ -29,15 +27,6 @@ from .widgets import (
 from .workers import run_async
 
 SLIDE_MS = 8000
-
-
-def split_title(title: str) -> tuple[str, str]:
-    """"Beyond Horizon" -> ("Beyond", "Horizon"); the second half is drawn in outline."""
-    words = title.split()
-    if len(words) < 2:
-        return title, ""
-    cut = (len(words) + 1) // 2
-    return " ".join(words[:cut]), " ".join(words[cut:])
 
 
 def wide_art(t: Title) -> tuple[str, bool]:
@@ -227,10 +216,9 @@ class Hero(Backdrop):
 
     def _fill(self, t: Title) -> None:
         clear_layout(self.col)
-        self.col.addWidget(Eyebrow("Cinevia Premiere"))
-        self.col.addSpacing(17)
-        solid, outline = split_title(t.title)
-        self.col.addWidget(OutlineTitle(solid, outline, 46 if len(t.title) > 18 else 59))
+        title = ClampLabel(t.title, "heroTitleLong" if len(t.title) > 22 else "heroTitle", 2)
+        title.setMaximumWidth(520)
+        self.col.addWidget(title)
         self.col.addSpacing(14)
         self.col.addWidget(meta_row(t))
         self.col.addSpacing(15)

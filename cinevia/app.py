@@ -26,7 +26,7 @@ class CineviaApp:
         self.qt = QApplication(argv)
         self.qt.setApplicationName("Cinevia")
         self.qt.setWindowIcon(QIcon(str(ASSETS / "cinevia-logo.png")))
-        for font_file in ("Oswald.ttf", "DMSans.ttf"):
+        for font_file in ("Geist-Regular.ttf", "Geist-Medium.ttf", "Geist-SemiBold.ttf", "Geist-Bold.ttf"):
             QFontDatabase.addApplicationFont(str(ASSETS / "fonts" / font_file))
         login_module.LOGO = ASSETS / "cinevia-logo.png"
 

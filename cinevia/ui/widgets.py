@@ -9,7 +9,6 @@ from PySide6.QtCore import (
     QEasingCurve,
     QEvent,
     QPoint,
-    QPointF,
     QPropertyAnimation,
     QRect,
     QRectF,
@@ -47,7 +46,7 @@ from cinevia.data.models import Title
 
 from .context import Session
 from .images import images
-from .theme import DISPLAY, SANS, theme
+from .theme import SANS, theme
 from .workers import run_async
 
 # ---------- Small helpers ----------
@@ -160,22 +159,6 @@ class ClampLabel(QLabel):
             self.setMinimumHeight(self.fontMetrics().lineSpacing() * len(lines) + 4)
 
 
-class Eyebrow(QWidget):
-    """The small red-ruled uppercase label above a heading."""
-
-    def __init__(self, text: str) -> None:
-        super().__init__()
-        row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(8)
-        rule = QFrame()
-        rule.setFixedSize(18, 2)
-        rule.setStyleSheet("background: #e50914;")
-        row.addWidget(rule)
-        row.addWidget(label(text.upper(), "eyebrow"))
-        row.addStretch()
-
-
 def chips(values: list[str]) -> QWidget:
     w = QWidget()
     row = QHBoxLayout(w)
@@ -185,51 +168,6 @@ def chips(values: list[str]) -> QWidget:
         row.addWidget(label(v, "chip"))
     row.addStretch()
     return w
-
-
-class OutlineTitle(QWidget):
-    """Display type in Oswald. ``outline`` lines are drawn as a stroke, like the reference hero."""
-
-    def __init__(self, solid: str, outline: str = "", px: int = 59, upper: bool = True) -> None:
-        super().__init__()
-        self.lines = [(solid.upper() if upper else solid, False)]
-        if outline:
-            self.lines.append((outline.upper() if upper else outline, True))
-        self.px = px
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        self._fit()
-
-    def _font(self) -> QFont:
-        f = font(DISPLAY, self.px, 700)
-        f.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 98)
-        return f
-
-    def _fit(self) -> None:
-        QFontMetrics(self._font())
-        self.setFixedHeight(int(self.px * 0.92) * len(self.lines) + int(self.px * 0.18))
-
-    def sizeHint(self) -> QSize:
-        fm = QFontMetrics(self._font())
-        return QSize(max(fm.horizontalAdvance(t) for t, _ in self.lines) + 4, self.height())
-
-    def paintEvent(self, event) -> None:
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        f = self._font()
-        fm = QFontMetrics(f)
-        y = fm.ascent() - int(self.px * 0.06)
-        for text, stroked in self.lines:
-            text = fm.elidedText(text, Qt.TextElideMode.ElideRight, self.width() - 2)
-            path = QPainterPath()
-            path.addText(QPointF(1, y), f, text)
-            if stroked:
-                p.setPen(QPen(theme.color("text"), 1.1))
-                p.setBrush(Qt.BrushStyle.NoBrush)
-            else:
-                p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(theme.color("text"))
-            p.drawPath(path)
-            y += int(self.px * 0.92)
 
 
 class EmptyState(QWidget):
@@ -367,8 +305,8 @@ class PosterCard(QWidget):
             p.drawPixmap((self.width() - target.width()) // 2, (self.height() - target.height()) // 2, self._scaled)
         else:
             p.setPen(theme.color("muted"))
-            p.setFont(font(DISPLAY, 14, 500))
-            p.drawText(r.adjusted(12, 12, -12, -12), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.title.title.upper())
+            p.setFont(font(SANS, 14, 600))
+            p.drawText(r.adjusted(12, 12, -12, -12), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.title.title)
 
         shade = QLinearGradient(0, 0, 0, self.height())
         shade.setColorAt(0.42, QColor(5, 6, 9, 0))

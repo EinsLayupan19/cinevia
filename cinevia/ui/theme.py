@@ -74,8 +74,9 @@ LIGHT = {
     "dots": "#b9bcc4",
 }
 
-DISPLAY = "Oswald"
-SANS = "DM Sans"
+# One typeface throughout; hierarchy comes from size and weight, not a novelty display face.
+SANS = "Geist"
+DISPLAY = SANS
 
 
 class _Theme(QObject):
@@ -136,11 +137,11 @@ QFrame#upgrade {{
     border: 1px solid {p['line2']}; border-radius: 10px;
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {p['surface']}, stop:1 {p['sidebar']});
 }}
-QLabel#upgradeTitle {{ color: {p['red']}; font-family: "{DISPLAY}"; font-size: 17px; font-weight: 700; }}
+QLabel#upgradeTitle {{ font-size: 14px; font-weight: 600; }}
 QLabel#upgradeText {{ color: {p['muted']}; font-size: 11px; }}
 QPushButton#upgradeLink {{
     text-align: left; border: 0; background: transparent; padding: 0;
-    color: {p['text']}; font-size: 10px; letter-spacing: 1px;
+    color: {p['text']}; font-size: 11px; font-weight: 500;
 }}
 QPushButton#upgradeLink:hover {{ color: {p['red_text']}; }}
 
@@ -183,10 +184,9 @@ QPushButton#clearButton {{
 QPushButton#clearButton:hover {{ background: rgba(229,9,20,20); }}
 
 /* Text */
-QLabel#eyebrow {{ color: {p['text3']}; font-size: 10px; font-weight: 600; letter-spacing: 1.6px; }}
-QLabel#pageTitle {{ font-family: "{DISPLAY}"; font-size: 38px; font-weight: 600; }}
+QLabel#pageTitle {{ font-size: 32px; font-weight: 600; }}
 QLabel#pageSub, QLabel#muted {{ color: {p['muted']}; font-size: 12px; }}
-QLabel#sectionTitle {{ font-family: "{DISPLAY}"; font-size: 18px; font-weight: 600; }}
+QLabel#sectionTitle {{ font-size: 16px; font-weight: 600; }}
 QLabel#sectionMeta {{ color: {p['muted2']}; font-size: 9px; }}
 QLabel#body {{ color: {p['text3']}; font-size: 12px; }}
 QLabel#meta {{ color: {p['text2']}; font-size: 11px; }}
@@ -196,9 +196,9 @@ QLabel#chip {{
     color: {p['chip_text']}; background: {p['chip_bg']}; border: 1px solid {p['chip_line']};
     border-radius: 4px; padding: 4px 9px; font-size: 9px;
 }}
-QLabel#fieldLabel {{ color: {p['muted']}; font-size: 9px; letter-spacing: 0.8px; }}
+QLabel#fieldLabel {{ color: {p['muted']}; font-size: 11px; font-weight: 500; }}
 QLabel#error {{ color: {p['red_text']}; font-size: 11px; }}
-QLabel#emptyTitle {{ font-family: "{DISPLAY}"; font-size: 20px; font-weight: 500; }}
+QLabel#emptyTitle {{ font-size: 18px; font-weight: 600; }}
 QLabel#emptyText {{ color: {p['muted2']}; font-size: 11px; }}
 QLabel#emptyIcon {{ background: {p['surface']}; border: 1px solid {p['line2']}; border-radius: 31px; }}
 QLabel#facts {{ color: {p['muted']}; font-size: 10px; }}
@@ -228,20 +228,22 @@ QPushButton#historyAction {{ border: 0; background: transparent; color: {p['mute
 QPushButton#historyAction:hover {{ color: {p['red_text']}; }}
 
 /* Login */
-QWidget#authForm QLabel#authTitle {{ font-family: "{DISPLAY}"; font-size: 39px; font-weight: 600; }}
+QWidget#authForm QLabel#authTitle {{ font-size: 32px; font-weight: 600; }}
 QFrame#authInput {{ background: {p['surface']}; border: 1px solid {p['field_line']}; border-radius: 6px; }}
 QFrame#authInput[focus="true"] {{ border-color: {p['red']}; }}
 QFrame#authInput QLineEdit {{ background: transparent; border: 0; font-size: 12px; padding: 0; }}
 QLabel#authSwitch {{ color: {p['muted']}; font-size: 10px; }}
-QLabel#authQuote {{ font-family: "{DISPLAY}"; font-size: 27px; font-weight: 500; color: #ffffff; }}
+QLabel#authQuote {{ font-size: 28px; font-weight: 600; color: #ffffff; }}
 QLabel#authQuoteSub {{ color: #969aa3; font-size: 11px; }}
-QLabel#authWordmark {{ font-family: "{DISPLAY}"; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: 3px; }}
-QLabel#logoWord {{ font-family: "{DISPLAY}"; font-size: 14px; font-weight: 600; letter-spacing: 1.7px; }}
-QLabel#heroIndex {{ font-family: "{DISPLAY}"; font-size: 25px; font-weight: 500; }}
+QLabel#authWordmark {{ font-size: 20px; font-weight: 600; color: #ffffff; }}
+QLabel#logoWord {{ font-size: 16px; font-weight: 600; }}
+QLabel#heroIndex {{ font-size: 22px; font-weight: 500; }}
 QLabel#heroIndexTotal {{ color: {p['muted2']}; font-size: 10px; }}
-QLabel#detailsTitle {{ font-family: "{DISPLAY}"; font-size: 50px; font-weight: 600; }}
-QLabel#playerTitle {{ font-family: "{DISPLAY}"; font-size: 20px; font-weight: 600; color: #ffffff; }}
-QLabel#playerKicker {{ color: #9a9ea6; font-size: 10px; letter-spacing: 1.4px; }}
+QLabel#detailsTitle {{ font-size: 40px; font-weight: 600; }}
+QLabel#heroTitle {{ font-size: 44px; font-weight: 600; }}
+QLabel#heroTitleLong {{ font-size: 36px; font-weight: 600; }}
+QLabel#playerTitle {{ font-size: 18px; font-weight: 600; color: #ffffff; }}
+QLabel#playerKicker {{ color: #9a9ea6; font-size: 11px; }}
 QLabel#playerNote {{ color: #b2b5bc; font-size: 12px; }}
 QLabel#time {{ color: #b2b5bc; font-size: 10px; }}
 

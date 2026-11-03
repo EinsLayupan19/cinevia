@@ -30,7 +30,6 @@ from .theme import theme
 from .widgets import (
     ClampLabel,
     EmptyState,
-    Eyebrow,
     Grid,
     Row,
     button,
@@ -58,13 +57,11 @@ class Page(QScrollArea):
         self.body.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.setWidget(inner)
 
-    def header(self, eyebrow: str, title: str, sub: str) -> QWidget:
+    def header(self, title: str, sub: str) -> QWidget:
         box = QWidget()
         col = QVBoxLayout(box)
         col.setContentsMargins(0, 0, 0, 36)
         col.setSpacing(0)
-        col.addWidget(Eyebrow(eyebrow))
-        col.addSpacing(9)
         col.addWidget(label(title, "pageTitle"))
         col.addSpacing(6)
         self.subtitle = label(sub, "pageSub", wrap=True)
@@ -120,7 +117,7 @@ class HomePage(Page):
 class MoviesPage(Page):
     def __init__(self, session: Session) -> None:
         super().__init__((40, 48, 0, 70))
-        self.body.addWidget(self.header("Now on Apple TV", "Movies", "This week's charts by genre. Every title comes with its official trailer."))
+        self.body.addWidget(self.header("Movies", "This week's charts by genre. Every title comes with its official trailer."))
 
         def newest() -> list[Title]:
             return sorted(catalog.movie_library(), key=lambda t: (t.year or 0, t.popularity), reverse=True)
@@ -134,7 +131,7 @@ class MoviesPage(Page):
 class TvPage(Page):
     def __init__(self, session: Session) -> None:
         super().__init__((40, 48, 0, 70))
-        self.body.addWidget(self.header("Tonight on TV", "TV Shows", "Trending seasons, today's new episodes and the series viewers rate highest."))
+        self.body.addWidget(self.header("TV Shows", "Trending seasons, today's new episodes and the series viewers rate highest."))
         self.body.addWidget(row("Trending This Week", session, tvmaze.trending_shows))
         self.body.addWidget(row("New Episodes Today", session, tvmaze.airing_today))
         self.body.addWidget(row("Highest Rated", session, lambda: sorted(tvmaze.show_library(), key=lambda t: -(t.rating or 0))))
@@ -230,11 +227,9 @@ class DetailsPage(Page):
         col = QVBoxLayout(copy)
         col.setContentsMargins(0, 0, 0, 7)
         col.setSpacing(0)
-        col.addWidget(Eyebrow("Cinevia Series" if t.kind == "tv" else "Cinevia Select"))
-        col.addSpacing(12)
-        name = label(t.title.upper(), "detailsTitle", wrap=True)
-        if len(t.title) > 20:
-            name.setStyleSheet("font-size: 40px;")
+        name = label(t.title, "detailsTitle", wrap=True)
+        if len(t.title) > 24:
+            name.setStyleSheet("font-size: 32px;")
         col.addWidget(name)
         col.addSpacing(11)
         col.addWidget(meta_row(t))
@@ -293,7 +288,7 @@ class _Select(QWidget):
         col = QVBoxLayout(self)
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(7)
-        cap = label(caption.upper(), "fieldLabel")
+        cap = label(caption, "fieldLabel")
         col.addWidget(cap)
         self.combo = QComboBox()
         self.combo.addItems(options)
@@ -319,7 +314,7 @@ class DiscoverPage(Page):
         self.results: list[Title] = []
         self.shown = self.PAGE
         self.pool_query: str | None = None
-        self.body.addWidget(self.header("Find your next favorite", "Discover", "Explore movies and series across every world, mood and moment."))
+        self.body.addWidget(self.header("Discover", "Explore movies and series across every world, mood and moment."))
 
         panel = QFrame()
         panel.setObjectName("filterPanel")
@@ -331,7 +326,7 @@ class DiscoverPage(Page):
         sc = QVBoxLayout(search)
         sc.setContentsMargins(0, 0, 0, 0)
         sc.setSpacing(7)
-        cap = label("SEARCH BY TITLE", "fieldLabel")
+        cap = label("Search by title", "fieldLabel")
         sc.addWidget(cap)
         self.field = QFrame()
         self.field.setObjectName("field")
@@ -485,7 +480,7 @@ class FavoritesPage(Page):
     def __init__(self, session: Session) -> None:
         super().__init__((40, 48, 0, 70))
         self.session = session
-        self.body.addWidget(self.header("Your personal cinema", "My Favorites", ""))
+        self.body.addWidget(self.header("My Favorites", ""))
         self.rows = QVBoxLayout()
         self.body.addLayout(self.rows)
         self.body.addStretch(1)
@@ -519,7 +514,7 @@ class HistoryPage(Page):
         super().__init__((40, 48, 100, 70))
         self.session = session
         top = QHBoxLayout()
-        top.addWidget(self.header("Pick up where you left off", "Search History", "Your recent searches across Cinevia."))
+        top.addWidget(self.header("Search History", "Your recent searches across Cinevia."))
         top.addStretch()
         self.clear = button("  Clear history", "clearButton", "x", "red_text")
         self.clear.clicked.connect(session.clear_history)

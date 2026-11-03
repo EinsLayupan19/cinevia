@@ -19,7 +19,7 @@ from cinevia.data import itunes
 
 from .images import images
 from .theme import theme
-from .widgets import Eyebrow, button, cover_pixmap, icon, label
+from .widgets import button, cover_pixmap, icon, label
 from .workers import run_async
 
 LOGO = None  # set by the app: path to the logo image
@@ -42,19 +42,18 @@ class _Art(QWidget):
         if LOGO:
             mark.setPixmap(round_logo(QPixmap(str(LOGO)), 44))
         brand.addWidget(mark)
-        word = QLabel('CINE<span style="color:#e50914">VIA</span>')
-        word.setTextFormat(Qt.TextFormat.RichText)
+        word = QLabel("Cinevia")
         word.setObjectName("authWordmark")
         brand.addWidget(word)
         brand.addStretch()
         col.addLayout(brand)
         col.addSpacing(30)
-        quote = QLabel("Every story deserves a front-row seat.")
+        quote = QLabel("Find something good to watch tonight.")
         quote.setWordWrap(True)
         quote.setMaximumWidth(440)
         quote.setObjectName("authQuote")
         col.addWidget(quote)
-        sub = QLabel("Trending movies and TV shows, with trailers, in one place.")
+        sub = QLabel("Trending movies and TV shows, with their trailers.")
         sub.setObjectName("authQuoteSub")
         col.addSpacing(8)
         col.addWidget(sub)
@@ -115,7 +114,7 @@ class _Field(QFrame):
         col = QVBoxLayout(self)
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(7)
-        cap = label(caption.upper(), "fieldLabel")
+        cap = label(caption, "fieldLabel")
         col.addWidget(cap)
         self.box = QFrame()
         self.box.setObjectName("authInput")
@@ -197,8 +196,6 @@ class LoginScreen(QWidget):
         col = QVBoxLayout(form)
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(0)
-        col.addWidget(Eyebrow("Welcome to Cinevia"))
-        col.addSpacing(13)
         self.heading = label("", "authTitle")
         col.addWidget(self.heading)
         col.addSpacing(7)
@@ -221,6 +218,7 @@ class LoginScreen(QWidget):
 
         self.error = label("", "error", wrap=True)
         self.error.setAccessibleName("Error")
+        self.error.hide()  # only takes space when there is something to say
         col.addWidget(self.error)
         col.addSpacing(8)
         self.submit = button("", "primary")
@@ -249,14 +247,14 @@ class LoginScreen(QWidget):
     def _apply_mode(self) -> None:
         login = self.mode == "login"
         self.heading.setText("Welcome back" if login else "Create your account")
-        self.sub.setText("Sign in to continue your cinematic journey." if login else "Join and start building your personal cinema.")
+        self.sub.setText("Sign in to see your favorites and recent searches." if login else "Save favorites and keep your search history in one place.")
         self.confirm.setVisible(not login)
         self.rules.setVisible(not login)
         self.submit.setText("Sign in" if login else "Create account")
         self.switch_text.setText("New to Cinevia?" if login else "Already have an account?")
         self.switch_btn.setText("Create an account" if login else "Sign in")
         self.password.edit.setPlaceholderText("Enter your password" if login else "Create a password")
-        self.error.clear()
+        self.error.hide()
         self.username.edit.setFocus()
 
     def _toggle_mode(self) -> None:
@@ -279,7 +277,7 @@ class LoginScreen(QWidget):
             if problem:
                 self._fail(problem)
                 return
-        self.error.clear()
+        self.error.hide()
         self.submit.setEnabled(False)
         self.submit.setText("Signing in..." if self.mode == "login" else "Creating account...")
         # Hashing takes a moment on purpose (600,000 PBKDF2 rounds), so it runs off the UI thread.
@@ -300,6 +298,7 @@ class LoginScreen(QWidget):
 
     def _fail(self, message: str) -> None:
         self.error.setText(message)
+        self.error.show()
         self.password.edit.setFocus()
         self.password.edit.selectAll()
 
