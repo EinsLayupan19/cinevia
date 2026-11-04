@@ -5,9 +5,7 @@ from __future__ import annotations
 from PySide6.QtCore import QEvent, QRectF, QSize, Qt, QTimer
 from PySide6.QtGui import QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import (
-    QComboBox,
     QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -31,6 +29,7 @@ from .widgets import (
     ClampLabel,
     EmptyState,
     Grid,
+    ChipGroup,
     Row,
     button,
     chips,
@@ -291,30 +290,27 @@ class DetailsPage(Page):
 # ---------- Discover ----------
 
 
-class _Select(QWidget):
-    def __init__(self, caption: str, options: list[str]) -> None:
-        super().__init__()
-        col = QVBoxLayout(self)
-        col.setContentsMargins(0, 0, 0, 0)
-        col.setSpacing(7)
-        cap = label(caption, "fieldLabel")
-        col.addWidget(cap)
-        self.combo = QComboBox()
-        self.combo.addItems(options)
-        self.combo.setAccessibleName(caption)
-        self.combo.setCursor(Qt.CursorShape.PointingHandCursor)
-        cap.setBuddy(self.combo)
-        col.addWidget(self.combo)
-
-    def value(self) -> str:
-        return self.combo.currentText()
-
-    def set(self, value: str) -> None:
-        self.combo.setCurrentText(value)
+SHORT_LABELS = {
+    "All Types": "All",
+    "All Genres": "All",
+    "All Years": "All",
+    catalog.OLDER: "Older",
+    "Any Rating": "Any",
+    "Popularity": "Popular",
+    "Highest Rated": "Top rated",
+    "Newest First": "Newest",
+    "Oldest First": "Oldest",
+    "Alphabetical (A-Z)": "A-Z",
+}
 
 
 class DiscoverPage(Page):
+    """Search and filters. Every filter is a single click and applies at once;
+    the title search updates as you type."""
+
     PAGE = 36
+    TYPE_DELAY_MS = 350  # wait for a pause in typing before searching
+    HISTORY_DELAY_MS = 1500  # only save a search once the viewer has settled on it
 
     def __init__(self, session: Session, query: str = "", focus: str | None = None) -> None:
         super().__init__()
@@ -323,23 +319,20 @@ class DiscoverPage(Page):
         self.results: list[Title] = []
         self.shown = self.PAGE
         self.pool_query: str | None = None
-        self.body.addWidget(self.header("Discover", "Explore movies and series across every world, mood and moment."))
+        self.saved_query = query.strip().lower()
+        self.body.addWidget(self.header("Discover", "Search and filter every movie and series in Cinevia."))
 
         panel = QFrame()
         panel.setObjectName("filterPanel")
-        grid = QGridLayout(panel)
-        grid.setContentsMargins(17, 17, 17, 17)
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(14)
-        search = QWidget()
-        sc = QVBoxLayout(search)
-        sc.setContentsMargins(0, 0, 0, 0)
-        sc.setSpacing(7)
-        cap = label("Search by title", "fieldLabel")
-        sc.addWidget(cap)
+        col = QVBoxLayout(panel)
+        col.setContentsMargins(18, 18, 18, 18)
+        col.setSpacing(18)
+
+        top = QHBoxLayout()
+        top.setSpacing(14)
         self.field = QFrame()
         self.field.setObjectName("field")
-        self.field.setFixedHeight(39)
+        self.field.setFixedHeight(40)
         fr = QHBoxLayout(self.field)
         fr.setContentsMargins(11, 0, 11, 0)
         fr.setSpacing(9)
@@ -347,36 +340,44 @@ class DiscoverPage(Page):
         glass.setPixmap(icon("magnifying-glass", "muted2").pixmap(16, 16))
         fr.addWidget(glass)
         self.query = QLineEdit(query)
-        self.query.setPlaceholderText("Search movies and shows...")
+        self.query.setPlaceholderText("Search by title, director or network...")
         self.query.setAccessibleName("Search by title")
-        cap.setBuddy(self.query)
-        self.query.returnPressed.connect(self.apply)
+        self.query.setClearButtonEnabled(True)
         self.query.installEventFilter(self)
         fr.addWidget(self.query)
-        sc.addWidget(self.field)
-        self.type = _Select("Type", catalog.TYPE_OPTIONS)
-        self.genre = _Select("Genre", catalog.GENRE_OPTIONS)
-        self.year = _Select("Release year", catalog.year_options())
-        self.rating = _Select("Rating", catalog.RATING_OPTIONS)
-        self.sort = _Select("Sort by", catalog.SORT_OPTIONS)
-        grid.addWidget(search, 0, 0)
-        for i, w in enumerate((self.type, self.genre, self.year, self.rating, self.sort), start=1):
-            grid.addWidget(w, 0, i)
-        grid.setColumnStretch(0, 17)
-        for i in range(1, 6):
-            grid.setColumnStretch(i, 10)
-        actions = QHBoxLayout()
-        actions.addStretch()
-        reset = button("Reset", "textButton")
+        top.addWidget(self.field, 1)
+        reset = button("Reset filters", "textButton")
+        reset.setStyleSheet("font-size: 11px;")
         reset.clicked.connect(self.reset)
-        apply_btn = button("Apply filters", "primary")
-        apply_btn.setFixedHeight(35)
-        apply_btn.clicked.connect(self.apply)
-        actions.addWidget(reset)
-        actions.addSpacing(10)
-        actions.addWidget(apply_btn)
-        grid.addLayout(actions, 1, 0, 1, 6)
+        top.addWidget(reset)
+        col.addLayout(top)
+
+        self.type = ChipGroup("Type", catalog.TYPE_OPTIONS, SHORT_LABELS)
+        self.sort = ChipGroup("Sort by", catalog.SORT_OPTIONS, SHORT_LABELS)
+        self.genre = ChipGroup("Genre", catalog.GENRE_OPTIONS, SHORT_LABELS)
+        self.year = ChipGroup("Release year", catalog.year_options(), SHORT_LABELS)
+        self.rating = ChipGroup("Rating", catalog.RATING_OPTIONS, SHORT_LABELS)
+        first = QHBoxLayout()
+        first.setSpacing(36)
+        first.addWidget(self.type, 3)
+        first.addWidget(self.sort, 5)
+        col.addLayout(first)
+        col.addWidget(self.genre)
+        last = QHBoxLayout()
+        last.setSpacing(36)
+        last.addWidget(self.year, 7)
+        last.addWidget(self.rating, 5)
+        col.addLayout(last)
         self.body.addWidget(panel)
+
+        for group in (self.type, self.sort, self.genre, self.year, self.rating):
+            group.changed.connect(lambda _v: self.apply())
+        self.type_timer = QTimer(self, singleShot=True, interval=self.TYPE_DELAY_MS)
+        self.type_timer.timeout.connect(self.apply)
+        self.history_timer = QTimer(self, singleShot=True, interval=self.HISTORY_DELAY_MS)
+        self.history_timer.timeout.connect(self._save_search)
+        self.query.textChanged.connect(lambda _t: (self.type_timer.start(), self.history_timer.start()))
+        self.query.returnPressed.connect(lambda: (self.type_timer.stop(), self.apply(), self._save_search()))
 
         head = QHBoxLayout()
         head.setContentsMargins(0, 34, 0, 14)
@@ -401,9 +402,10 @@ class DiscoverPage(Page):
         self.body.addWidget(self.more, 0, Qt.AlignmentFlag.AlignHCenter)
         self.more.hide()
 
-        if focus in ("genre", "year", "rating"):
-            getattr(self, focus).combo.setFocus()
-            getattr(self, focus).combo.showPopup()
+        # The Genre / Year / Rating shortcuts in the top bar land on that row.
+        groups = {"genre": self.genre, "year": self.year, "rating": self.rating}
+        if focus in groups:
+            groups[focus].focus_selected()
         self.apply()
 
     def eventFilter(self, obj, event) -> bool:
@@ -423,18 +425,22 @@ class DiscoverPage(Page):
             sort=self.sort.value(),
         )
 
+    def _save_search(self) -> None:
+        q = self.query.text().strip()
+        if len(q) >= 2 and q.lower() != self.saved_query:
+            self.saved_query = q.lower()
+            self.session.add_search(q)
+
     def apply(self) -> None:
         f = self.filters()
         q = f.query.strip()
-        if q and q.lower() != (self.pool_query or "").lower():
-            self.session.add_search(q)
         self.shown = self.PAGE
         self.results_title.setText(f'Results for "{q}"' if q else "All Titles")
         self.note.setText(
             "Ratings come from TVmaze, so rated results are TV shows." if f.rating != "Any Rating" else "Live from Apple TV charts and TVmaze"
         )
         if self.pool_query is not None and q.lower() == self.pool_query.lower():
-            self._render()
+            self._render()  # same search, different filters: instant, no network
             return
         self.pool_query = q
         clear_layout(self.status)
@@ -476,9 +482,11 @@ class DiscoverPage(Page):
         self._render()
 
     def reset(self) -> None:
+        self.query.blockSignals(True)
         self.query.clear()
-        for s in (self.type, self.genre, self.year, self.rating, self.sort):
-            s.combo.setCurrentIndex(0)
+        self.query.blockSignals(False)
+        for group in (self.type, self.sort, self.genre, self.year, self.rating):
+            group.reset()
         self.apply()
 
 

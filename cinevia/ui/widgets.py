@@ -15,6 +15,7 @@ from PySide6.QtCore import (
     QSize,
     Qt,
     QVariantAnimation,
+    Signal,
 )
 from PySide6.QtGui import (
     QBrush,
@@ -30,6 +31,7 @@ from PySide6.QtGui import (
     QPixmap,
 )
 from PySide6.QtWidgets import (
+    QButtonGroup,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -652,3 +654,100 @@ class Grid(QWidget):
             c.move(k * (w + self.GAP), r * (h + self.GAP))
         rows = (len(self.cards) + cols - 1) // cols
         self.setFixedHeight(rows * h + (rows - 1) * self.GAP)
+
+
+# ---------- One-click filter chips ----------
+
+
+class FlowLayout(QLayout):
+    """Lays widgets out left to right, wrapping onto new lines when out of room."""
+
+    def __init__(self, parent: QWidget | None = None, spacing: int = 8) -> None:
+        super().__init__(parent)
+        self._items = []
+        self._spacing = spacing
+        self.setContentsMargins(0, 0, 0, 0)
+
+    def addItem(self, item) -> None:
+        self._items.append(item)
+
+    def count(self) -> int:
+        return len(self._items)
+
+    def itemAt(self, i):
+        return self._items[i] if 0 <= i < len(self._items) else None
+
+    def takeAt(self, i):
+        return self._items.pop(i) if 0 <= i < len(self._items) else None
+
+    def hasHeightForWidth(self) -> bool:
+        return True
+
+    def heightForWidth(self, width: int) -> int:
+        return self._place(QRect(0, 0, width, 0), apply=False)
+
+    def setGeometry(self, rect: QRect) -> None:
+        super().setGeometry(rect)
+        self._place(rect, apply=True)
+
+    def sizeHint(self) -> QSize:
+        return self.minimumSize()
+
+    def minimumSize(self) -> QSize:
+        size = QSize()
+        for item in self._items:
+            size = size.expandedTo(item.minimumSize())
+        return size
+
+    def _place(self, rect: QRect, apply: bool) -> int:
+        x, y, line = rect.x(), rect.y(), 0
+        for item in self._items:
+            hint = item.sizeHint()
+            if x + hint.width() > rect.right() + 1 and line > 0:
+                x, y, line = rect.x(), y + line + self._spacing, 0
+            if apply:
+                item.setGeometry(QRect(QPoint(x, y), hint))
+            x += hint.width() + self._spacing
+            line = max(line, hint.height())
+        return y + line - rect.y()
+
+
+class ChipGroup(QWidget):
+    """A captioned row of options where exactly one is selected; one click changes it."""
+
+    changed = Signal(str)
+
+    def __init__(self, caption: str, options: list[str], labels: dict[str, str] | None = None) -> None:
+        super().__init__()
+        labels = labels or {}
+        col = QVBoxLayout(self)
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(8)
+        col.addWidget(label(caption, "fieldLabel"))
+        holder = QWidget()
+        holder.setAccessibleName(caption)
+        flow = FlowLayout(holder, 6)
+        self.group = QButtonGroup(self)
+        self.group.setExclusive(True)
+        self.buttons: dict[str, QPushButton] = {}
+        for option in options:
+            b = QPushButton(labels.get(option, option))
+            b.setObjectName("chipToggle")
+            b.setCheckable(True)
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
+            b.setAccessibleName(f"{caption}: {labels.get(option, option)}")
+            self.group.addButton(b)
+            self.buttons[option] = b
+            flow.addWidget(b)
+        self.buttons[options[0]].setChecked(True)
+        self.group.buttonClicked.connect(lambda _b: self.changed.emit(self.value()))
+        col.addWidget(holder)
+
+    def value(self) -> str:
+        return next(o for o, b in self.buttons.items() if b.isChecked())
+
+    def reset(self) -> None:
+        next(iter(self.buttons.values())).setChecked(True)
+
+    def focus_selected(self) -> None:
+        self.buttons[self.value()].setFocus()

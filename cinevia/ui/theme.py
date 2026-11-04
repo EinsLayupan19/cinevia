@@ -219,6 +219,15 @@ QComboBox QAbstractItemView {{
     selection-color: #ffffff; padding: 4px; outline: 0;
 }}
 
+QPushButton#chipToggle {{
+    border: 1px solid {p['line2']}; border-radius: 5px; padding: 6px 13px;
+    font-size: 11px; font-weight: 500; color: {p['text2']}; background: transparent;
+}}
+QPushButton#chipToggle:hover {{ border-color: {p['ghost_line']}; color: {p['text']}; }}
+QPushButton#chipToggle:checked {{ background: {p['red']}; border-color: {p['red']}; color: #ffffff; }}
+QPushButton#chipToggle:focus {{ border-color: {p['text2']}; }}
+QPushButton#chipToggle:checked:focus {{ border-color: #ffffff; }}
+
 /* History */
 QFrame#historyItem {{ border-bottom: 1px solid {p['line']}; }}
 QLabel#historyIcon {{ background: {p['surface']}; border: 1px solid {p['line2']}; border-radius: 7px; }}
