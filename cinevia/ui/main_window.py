@@ -33,7 +33,7 @@ from .pages import (
     MoviesPage,
     TvPage,
 )
-from .player import PlayerDialog
+from .player import PlayerView
 from .theme import theme
 from .widgets import button, icon, label
 
@@ -292,9 +292,11 @@ class MainWindow(QMainWindow):
         right.addWidget(self.stack, 1)
         row.addLayout(right, 1)
         self.setCentralWidget(root)
+        # Trailers play in this same window, covering it like Netflix does.
+        self.player_view = PlayerView(root)
 
-        QShortcut(QKeySequence("Ctrl+K"), self, lambda: (self.topbar.input.setFocus(), self.topbar.input.selectAll()))
-        QShortcut(QKeySequence("/"), self, lambda: self.topbar.input.setFocus())
+        QShortcut(QKeySequence("Ctrl+K"), self, self._focus_search)
+        QShortcut(QKeySequence("/"), self, self._focus_search)
         QShortcut(QKeySequence("Alt+Left"), self, self.back)
         QShortcut(QKeySequence(QKeySequence.StandardKey.Back), self, self.back)
         theme.changed.connect(self._on_theme)
@@ -306,7 +308,16 @@ class MainWindow(QMainWindow):
         del self.history[:-30]
         self._show(Route(page, title, query, focus))
 
+    def _focus_search(self) -> None:
+        if self.player_view.isVisible():
+            return  # keys belong to the player while it is open
+        self.topbar.input.setFocus()
+        self.topbar.input.selectAll()
+
     def back(self) -> None:
+        if self.player_view.isVisible():
+            self.player_view.close_player()
+            return
         if self.history:
             self._show(self.history.pop())
         else:
@@ -353,7 +364,7 @@ class MainWindow(QMainWindow):
         self.topbar.input.setText(query)
 
     def play(self, title: Title) -> None:
-        PlayerDialog(title, self).exec()
+        self.player_view.open(title)
 
     def toggle_theme(self) -> None:
         name = "light" if theme.name == "dark" else "dark"

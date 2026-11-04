@@ -246,6 +246,15 @@ QLabel#playerTitle {{ font-size: 18px; font-weight: 600; color: #ffffff; }}
 QLabel#playerKicker {{ color: #9a9ea6; font-size: 11px; }}
 QLabel#playerNote {{ color: #b2b5bc; font-size: 12px; }}
 QLabel#time {{ color: #b2b5bc; font-size: 10px; }}
+/* In-window player (always on black, so fixed light colors) */
+QPushButton#pvButton {{ border: 0; border-radius: 22px; background: transparent; }}
+QPushButton#pvButton:hover {{ background: rgba(255,255,255,30); }}
+QPushButton#pvButton:disabled {{ background: transparent; }}
+QLabel#pvKicker {{ color: #b3b3b3; font-size: 12px; background: transparent; }}
+QLabel#pvTitle {{ color: #ffffff; font-size: 22px; font-weight: 600; background: transparent; }}
+QLabel#pvSmallTitle {{ color: #ffffff; font-size: 14px; font-weight: 500; background: transparent; }}
+QLabel#pvTime {{ color: #ffffff; font-size: 13px; background: transparent; }}
+QLabel#pvMessage {{ color: #d0d2d6; font-size: 15px; background: transparent; }}
 
 QLineEdit {{ selection-background-color: {p['red']}; selection-color: #ffffff; }}
 QMenu {{ background: {p['surface']}; border: 1px solid {p['line2']}; padding: 4px; }}

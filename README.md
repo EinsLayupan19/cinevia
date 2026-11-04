@@ -60,11 +60,11 @@ It is a normal account: the password is stored only as a salted PBKDF2 hash, and
 - **Home**: a featured hero (01 / 05) with "Watch trailer" and "View details", plus rows for Top 10 movies, trending TV, today's new episodes and genres. Drag rows with the mouse, or use the edge arrows.
 - **Movies** and **TV Shows** pages with genre rows.
 - **Details**: blurred backdrop, poster, rating, runtime, genres, synopsis, director or network, cast, "More Like This", and add to favorites.
-- **Trailers**: official movie trailers and TV episode teasers play inside the app's own player and never redirect to a browser. When Apple has no teaser for a show, its Watch button says so instead of opening another site.
+- **Trailers**: official movie trailers and TV episode teasers play full-window inside the app, like Netflix (no pop-up window, never a browser). Controls hide while the video plays. When Apple has no teaser for a show, its Watch button says so instead of opening another site.
 - **Discover**: search by title, then filter by type, genre, release year and rating, and sort.
 - **Favorites** (grouped by genre) and **Search History** are saved per user in SQLite.
 - **Dark and light mode**, remembered per user.
-- Keyboard: `Ctrl+K` focuses search, `Alt+Left` goes back. On a focused poster, `Enter` opens it and `F` toggles favorite. `Space` plays or pauses in the player.
+- Keyboard: `Ctrl+K` focuses search, `Alt+Left` goes back. On a focused poster, `Enter` opens it and `F` toggles favorite. In the player: `Space` play/pause, `Left`/`Right` skip 10 seconds, `M` mute, `F` full screen, `Esc` back.
 
 ## Data sources (no API keys)
 
