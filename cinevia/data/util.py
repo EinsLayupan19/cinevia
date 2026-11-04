@@ -6,7 +6,6 @@ import time
 from collections.abc import Callable, Iterable
 from datetime import datetime
 from typing import TypeVar
-from urllib.parse import quote
 
 T = TypeVar("T")
 
@@ -62,11 +61,6 @@ def format_when(ts: float, now: datetime | None = None) -> str:
     if days == 1:
         return f"Yesterday, {clock}"
     return f"{d.strftime('%b')} {d.day}, {clock}"
-
-
-def youtube_search_url(title: str, kind: str) -> str:
-    q = f"{title} official {'series ' if kind == 'tv' else ''}trailer"
-    return f"https://www.youtube.com/results?search_query={quote(q)}"
 
 
 def today_iso(days_from_today: int = 0) -> str:

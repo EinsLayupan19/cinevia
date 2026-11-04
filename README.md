@@ -17,7 +17,7 @@ A Python desktop app for browsing trending **movies and TV shows** and watching 
 | 2a. SQLite for user data | `cinevia/db.py`: `users` table, plus each user's `favorites` and `history`. The file is `data/cinevia.db`. |
 | 2b. Password hashing with `hashlib` | `cinevia/auth.py`: `hashlib.pbkdf2_hmac("sha256", ...)` with a random 16-byte salt per user and 600,000 iterations. Plain-text passwords are never stored. |
 | 2c. Login logic | `Accounts.login()`: looks up the username, re-hashes the typed password with the stored salt, and compares with `hmac.compare_digest`. |
-| 3. Movies and TV Shows feature | Home, Movies, TV Shows, Details, Discover (search and filters), Favorites, Search History, and an in-app trailer player. |
+| 3A.1 Movies and TV Shows (plays on the UI, no redirect) | Home, Movies, TV Shows, Details, Discover (search and filters), Favorites, Search History, and an in-app trailer player (`cinevia/ui/player.py`, Qt Multimedia). |
 
 Extra security details:
 - The login error never says whether the username exists ("Incorrect username or password."). An unknown username still costs one hash, so response times match.
@@ -60,7 +60,7 @@ It is a normal account: the password is stored only as a salted PBKDF2 hash, and
 - **Home**: a featured hero (01 / 05) with "Watch trailer" and "View details", plus rows for Top 10 movies, trending TV, today's new episodes and genres. Drag rows with the mouse, or use the edge arrows.
 - **Movies** and **TV Shows** pages with genre rows.
 - **Details**: blurred backdrop, poster, rating, runtime, genres, synopsis, director or network, cast, "More Like This", and add to favorites.
-- **Trailers**: official movie trailers and TV episode teasers play inside the app. When Apple has none, the player offers a YouTube search.
+- **Trailers**: official movie trailers and TV episode teasers play inside the app's own player and never redirect to a browser. When Apple has no teaser for a show, its Watch button says so instead of opening another site.
 - **Discover**: search by title, then filter by type, genre, release year and rating, and sort.
 - **Favorites** (grouped by genre) and **Search History** are saved per user in SQLite.
 - **Dark and light mode**, remembered per user.
@@ -80,7 +80,7 @@ API responses are cached in `data/http-cache/` for 2 hours and images in `data/i
 py -m unittest discover -s tests
 ```
 
-32 tests cover password hashing and verification, sign-up rules, unique usernames, login failures and lockout, per-user favorites, history and theme, the API parsers, and the Discover filters.
+31 tests cover password hashing and verification, sign-up rules, unique usernames, login failures and lockout, per-user favorites, history and theme, the API parsers, and the Discover filters.
 
 ## Inspect the database
 

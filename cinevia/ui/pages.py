@@ -254,6 +254,9 @@ class DetailsPage(Page):
         play = button("Watch teaser" if t.kind == "tv" else "Watch trailer", "primary", "play", "#ffffff")
         play.clicked.connect(lambda: self.session.play_trailer(t))
         actions.addWidget(play)
+        # Look up the video now, so a title without one says so instead of
+        # offering a button that can't play (the result is cached for the player).
+        run_async(lambda: catalog.resolve_trailer(t), lambda url: self._trailer_checked(play, url), lambda e: None, owner=play)
         self.fav = button("", "ghost")
         self.fav.clicked.connect(lambda: self.session.toggle_favorite(self.title))
         self.session.favorites_changed.connect(self._sync_fav)
@@ -264,6 +267,12 @@ class DetailsPage(Page):
         self._sync_fav()
         self._place()
         QTimer.singleShot(0, self, self._place)  # once the new widgets have been laid out
+
+    def _trailer_checked(self, play: QPushButton, url: str | None) -> None:
+        if not url:
+            play.setEnabled(False)
+            play.setText("No teaser available" if self.title.kind == "tv" else "No trailer available")
+            play.setIcon(icon("play", "#ffffff"))
 
     def _sync_fav(self) -> None:
         if not hasattr(self, "fav"):

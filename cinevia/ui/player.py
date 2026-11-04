@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QSize, Qt, QUrl
-from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (
@@ -18,9 +18,8 @@ from PySide6.QtWidgets import (
 
 from cinevia.data import catalog
 from cinevia.data.models import Title
-from cinevia.data.util import youtube_search_url
 
-from .widgets import button, icon, label
+from .widgets import icon, label
 from .workers import run_async
 
 
@@ -66,12 +65,6 @@ class PlayerDialog(QDialog):
         self.note_text = label(f"Finding the {self.kind}...", "playerNote")
         self.note_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         nc.addWidget(self.note_text)
-        self.youtube = button("Find it on YouTube", "ghost", "youtube-logo", "#ffffff")
-        self.youtube.setStyleSheet("QPushButton { color: #ffffff; background: rgba(21,24,33,210); border-color: #464952; }")
-        self.youtube.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(youtube_search_url(title.title, title.kind))))
-        self.youtube.hide()
-        nc.addSpacing(12)
-        nc.addWidget(self.youtube, 0, Qt.AlignmentFlag.AlignCenter)
         self.video = QVideoWidget()
         self.video.setStyleSheet("background: #000000;")
         self.stack.addWidget(self.note)
@@ -128,8 +121,9 @@ class PlayerDialog(QDialog):
         self.player.stop()
         self.stack.setCurrentWidget(self.note)
         self.controls.setEnabled(False)
-        self.note_text.setText(f"Apple TV has no {self.kind} for this title.")
-        self.youtube.show()
+        # Everything plays inside the app (a project requirement), so there is no
+        # outside link here: the viewer just learns there is nothing to play.
+        self.note_text.setText(f"Apple TV has no {self.kind} for this title yet.")
 
     def _position(self, ms: int) -> None:
         if not self.slider.isSliderDown():

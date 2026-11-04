@@ -6,7 +6,7 @@ from cinevia.data.catalog import OLDER, Filters, apply_filters, buckets_of, matc
 from cinevia.data.itunes import artwork, parse_lookup_movie, parse_movie_entry
 from cinevia.data.models import Title
 from cinevia.data.tvmaze import parse_show
-from cinevia.data.util import format_runtime, format_when, normalize_name, strip_html, youtube_search_url
+from cinevia.data.util import format_runtime, format_when, normalize_name, strip_html
 
 ART = "https://is1-ssl.mzstatic.com/image/thumb/Video211/v4/f3/a5/2000x3000_Verity.jpg/115x170bb.png"
 
@@ -68,12 +68,6 @@ class UtilTests(unittest.TestCase):
         self.assertEqual(format_when(datetime(2026, 11, 2, 10, 2).timestamp(), now), "Today, 10:02 AM")
         self.assertEqual(format_when(datetime(2026, 11, 1, 21, 41).timestamp(), now), "Yesterday, 9:41 PM")
         self.assertEqual(format_when(datetime(2026, 3, 18, 18, 10).timestamp(), now), "Mar 18, 6:10 PM")
-
-    def test_youtube_link(self):
-        self.assertEqual(
-            youtube_search_url("The Bear", "tv"),
-            "https://www.youtube.com/results?search_query=The%20Bear%20official%20series%20trailer",
-        )
 
 
 class ParserTests(unittest.TestCase):

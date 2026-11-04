@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from PySide6.QtCore import QEvent, QSize, Qt, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QKeySequence, QPixmap, QShortcut
+from PySide6.QtCore import QEvent, QSize, Qt, Signal
+from PySide6.QtGui import QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -110,9 +110,7 @@ class Sidebar(QFrame):
             "upgradeText",
             wrap=True,
         )
-        credits.setTextFormat(Qt.TextFormat.RichText)
         self.credits = credits
-        credits.setOpenExternalLinks(True)
         cc.addWidget(credits)
         cc.addSpacing(4)
         explore = button("Explore all titles", "upgradeLink")
@@ -129,12 +127,8 @@ class Sidebar(QFrame):
         self.restyle()
 
     def _credits_html(self) -> str:
-        c = theme.p["text2"]
-        link = f'style="color:{c}"'
-        return (
-            f'Live charts from <a {link} href="https://tv.apple.com">Apple TV</a> '
-            f'and <a {link} href="https://www.tvmaze.com">TVmaze</a>.'
-        )
+        # Plain text on purpose: the app never sends the viewer out to a browser.
+        return "Live charts from Apple TV and TVmaze."
 
     def restyle(self) -> None:
         if hasattr(self, "credits"):
@@ -375,5 +369,3 @@ class MainWindow(QMainWindow):
     def log_out(self) -> None:
         self.logged_out.emit()
 
-    def open_external(self, url: str) -> None:
-        QDesktopServices.openUrl(QUrl(url))
