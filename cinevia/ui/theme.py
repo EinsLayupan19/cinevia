@@ -265,6 +265,40 @@ QLabel#pvSmallTitle {{ color: #ffffff; font-size: 14px; font-weight: 500; backgr
 QLabel#pvTime {{ color: #ffffff; font-size: 13px; background: transparent; }}
 QLabel#pvMessage {{ color: #d0d2d6; font-size: 15px; background: transparent; }}
 
+/* Music */
+QFrame#musicBar {{ background: {p['sidebar']}; border-top: 1px solid {p['line']}; }}
+QLabel#mbTitle {{ font-size: 12px; font-weight: 600; }}
+QLabel#mbArtist {{ color: {p['muted']}; font-size: 11px; }}
+QLabel#mbTime {{ color: {p['muted']}; font-size: 10px; }}
+QPushButton#mbButton {{ border: 0; border-radius: 17px; background: transparent; }}
+QPushButton#mbButton:hover {{ background: {p['hover']}; }}
+QPushButton#mbButton:disabled {{ background: transparent; }}
+QPushButton#mbPlay {{ border: 0; border-radius: 19px; background: {p['red']}; }}
+QPushButton#mbPlay:hover {{ background: {p['red_hover']}; }}
+QSlider#mbSeek::groove:horizontal {{ height: 4px; background: {p['line2']}; border-radius: 2px; }}
+QSlider#mbSeek::sub-page:horizontal {{ background: {p['red']}; border-radius: 2px; }}
+QSlider#mbSeek::handle:horizontal {{ width: 12px; height: 12px; margin: -4px 0; border-radius: 6px; background: {p['text']}; }}
+QFrame#trackRow {{ border-radius: 7px; background: transparent; }}
+QFrame#trackRow:hover, QFrame#trackRow:focus {{ background: {p['hover']}; }}
+QFrame#trackRow[playing="true"] {{ background: {p['surface']}; }}
+QLabel#trackRank {{ color: {p['muted2']}; font-size: 13px; font-weight: 600; }}
+QLabel#trackTitle {{ font-size: 12px; font-weight: 600; }}
+QLabel#trackArtist, QLabel#trackAlbum {{ color: {p['muted']}; font-size: 11px; }}
+QPushButton#trackIcon {{ border: 0; border-radius: 16px; background: transparent; }}
+QPushButton#trackIcon:hover {{ background: {p['ghost_hover']}; }}
+
+/* Games */
+QFrame#arcadeTile {{ background: {p['panel']}; border: 1px solid {p['panel_line']}; border-radius: 10px; }}
+QFrame#arcadeTile:hover, QFrame#arcadeTile:focus {{ border-color: {p['ghost_line']}; }}
+QLabel#arcadeBadge {{ background: {p['red']}; border-radius: 10px; }}
+QLabel#arcadeName {{ font-size: 16px; font-weight: 600; }}
+QLabel#arcadeText {{ color: {p['muted']}; font-size: 11px; }}
+QLabel#arcadeBest {{ color: {p['text2']}; font-size: 10px; }}
+QLabel#arcadeStatus {{ color: {p['text2']}; font-size: 13px; font-weight: 500; }}
+QFrame#statBox {{ background: {p['panel']}; border: 1px solid {p['panel_line']}; border-radius: 9px; }}
+QLabel#statCaption {{ color: {p['muted']}; font-size: 10px; }}
+QLabel#statValue {{ font-size: 20px; font-weight: 600; }}
+
 QLineEdit {{ selection-background-color: {p['red']}; selection-color: #ffffff; }}
 QMenu {{ background: {p['surface']}; border: 1px solid {p['line2']}; padding: 4px; }}
 QMenu::item {{ padding: 6px 14px; border-radius: 4px; }}

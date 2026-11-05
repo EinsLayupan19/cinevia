@@ -204,6 +204,31 @@ def error_state(what: str, retry: Callable[[], None], compact: bool = True, mess
 
 # ---------- Poster card ----------
 
+# Card shapes: posters are 2:3, album covers square, game art 16:9.
+CARD_SIZES = {"movie": QSize(155, 227), "tv": QSize(155, 227), "song": QSize(170, 170), "game": QSize(262, 147)}
+CARD_RATIO = {"movie": 1.5, "tv": 1.5, "song": 1.0, "game": 147 / 262}
+
+
+def card_size(kind: str) -> QSize:
+    return CARD_SIZES.get(kind, CARD_SIZES["movie"])
+
+
+def kind_word(t: Title) -> str:
+    return {"tv": "series", "song": "song", "game": "game"}.get(t.kind, "film")
+
+
+def caption(t: Title) -> tuple[str, str]:
+    """The small left and right text under a card's title."""
+    if t.kind == "song":
+        return t.credit or "", ""
+    if t.kind == "game":
+        platform = "Browser" if (t.platform or "").startswith("Web") else "PC"
+        return " · ".join(x for x in (t.genres[0] if t.genres else "", str(t.year or "")) if x), platform
+    left = str(t.year or "")
+    if t.kind == "tv":
+        left = f"{left} · Series" if left else "Series"
+    return left, "" if t.rating else "Film"
+
 
 class PosterCard(QWidget):
     """A 2:3 poster with the title, year and rating over a shade, and a favorite heart.
@@ -216,13 +241,14 @@ class PosterCard(QWidget):
         self.title = title
         self.session = session
         self.removable = removable
+        self.queue: list[Title] = []  # songs: what plays next (the row or grid it sits in)
         self.pix = QPixmap()
         self._scaled = QPixmap()
         self.hover = 0.0
         self.setFixedSize(size)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.setAccessibleName(f"{title.title}, {'series' if title.kind == 'tv' else 'film'}")
+        self.setAccessibleName(f"{title.title}, {kind_word(title)}")
         self.setToolTip(title.title)
         self.anim = QVariantAnimation(self, duration=220, easingCurve=QEasingCurve.Type.OutCubic)
         self.anim.valueChanged.connect(self._on_hover)
@@ -279,11 +305,18 @@ class PosterCard(QWidget):
         if self._heart_rect().adjusted(-4, -4, 4, 4).contains(pos) or (self.removable and self._remove_rect().contains(pos)):
             self.session.toggle_favorite(self.title)
         else:
+            self.activate()
+
+    def activate(self) -> None:
+        """Songs play right away in the mini player; everything else opens its details."""
+        if self.title.kind == "song":
+            self.session.play_song(self.title, self.queue or [self.title])
+        else:
             self.session.open_title(self.title)
 
     def keyPressEvent(self, e) -> None:
         if e.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
-            self.session.open_title(self.title)
+            self.activate()
         elif e.key() == Qt.Key.Key_F:
             self.session.toggle_favorite(self.title)
         else:
@@ -320,7 +353,7 @@ class PosterCard(QWidget):
         w = self.width() - 22
         title_font = font(SANS, 12, 600)
         fm = QFontMetrics(title_font)
-        lines = wrap_text(self.title.title, fm, w, 2)
+        lines = wrap_text(self.title.title, fm, w, 1 if self.title.kind == "game" else 2)
         bottom = self.height() - 10 + lift - (24 if self.removable else 0)
         genres_h = 15
         meta_h = 13
@@ -333,9 +366,8 @@ class PosterCard(QWidget):
         y += 5
         p.setFont(font(SANS, 9))
         p.setPen(QColor("#b5b8bd"))
-        left = str(self.title.year or "")
-        if self.title.kind == "tv":
-            left = f"{left} · Series" if left else "Series"
+        left, right = caption(self.title)
+        left = QFontMetrics(p.font()).elidedText(left, Qt.TextElideMode.ElideRight, w - 50)
         p.drawText(QRect(11, y, w, meta_h), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, left)
         if self.title.rating:
             text = f"{self.title.rating:.1f}"
@@ -344,10 +376,10 @@ class PosterCard(QWidget):
             p.drawText(QRect(11, y, w, meta_h), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, text)
             star = qta.icon("ph.star-fill", color=QColor("#ffd55c")).pixmap(20, 20)
             p.drawPixmap(QRect(11 + w - tw - 12, y + 2, 9, 9), star)
-        else:
-            p.drawText(QRect(11, y, w, meta_h), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, "Film")
+        elif right:
+            p.drawText(QRect(11, y, w, meta_h), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, right)
         y += meta_h + 4
-        if self.title.genres:
+        if self.title.genres and self.title.kind in ("movie", "tv"):
             c = QColor("#81858d")
             c.setAlphaF(h)
             p.setPen(c)
@@ -361,6 +393,16 @@ class PosterCard(QWidget):
             p.setFont(f)
             p.setPen(QColor("#ff626a"))
             p.drawText(rr, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "Remove")
+
+        # Songs: a play button fades in at the center on hover.
+        if self.title.kind == "song" and h > 0.01:
+            p.setOpacity(h)
+            c = QRectF(self.width() / 2 - 22, self.height() / 2 - 34, 44, 44)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(theme.color("red"))
+            p.drawEllipse(c)
+            p.drawPixmap(c.adjusted(12, 12, -10, -12).toRect(), qta.icon("ph.play-fill", color=QColor("#ffffff")).pixmap(40, 40))
+            p.setOpacity(1)
 
         # Heart: faint until hover, solid red when saved.
         saved = self.session.is_favorite(self.title.id)
@@ -436,8 +478,10 @@ class Row(QWidget):
         see_all: Callable[[], None] | None = None,
         removable: bool = False,
         limit: int = 20,
+        card: QSize | None = None,
     ) -> None:
         super().__init__()
+        self.CARD = card or self.CARD
         self.session = session
         self.heading = heading
         self.removable = removable
@@ -514,6 +558,7 @@ class Row(QWidget):
         clear_layout(self.cards)
         for t in items:
             card = PosterCard(t, self.session, self.CARD, self.removable)
+            card.queue = items
             card.installEventFilter(self)
             self.cards.addWidget(card)
         self.scroll.horizontalScrollBar().setValue(0)
@@ -609,8 +654,9 @@ class Grid(QWidget):
 
     GAP = 15
 
-    def __init__(self, session: Session, min_card: int = 130, max_cols: int = 6) -> None:
+    def __init__(self, session: Session, min_card: int = 130, max_cols: int = 6, ratio: float = 1.5) -> None:
         super().__init__()
+        self.ratio = ratio
         self.session = session
         self.min_card = min_card
         self.max_cols = max_cols
@@ -626,6 +672,8 @@ class Grid(QWidget):
             self.cards = [SkeletonCard() for _ in range(skeleton)]
         else:
             self.cards = [PosterCard(t, self.session) for t in items]
+            for c in self.cards:
+                c.queue = items
         for c in self.cards:
             c.setParent(self)
             c.show()
@@ -644,7 +692,7 @@ class Grid(QWidget):
             return
         cols = self._columns()
         w = (self.width() - self.GAP * (cols - 1)) // cols
-        h = int(w * 1.5)
+        h = int(w * self.ratio)
         for i, c in enumerate(self.cards):
             r, k = divmod(i, cols)
             if isinstance(c, PosterCard):

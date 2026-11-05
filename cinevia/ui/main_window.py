@@ -23,7 +23,9 @@ from cinevia.data.models import Title
 
 from . import login as login_module
 from .context import Session
+from .games import ARCADE, ArcadePage, GamesPage
 from .login import round_logo
+from .music import MusicBar, MusicPage
 from .pages import (
     DetailsPage,
     DiscoverPage,
@@ -41,6 +43,8 @@ NAV = [
     ("home", "Home", "house"),
     ("movies", "Movies", "film-strip"),
     ("tv", "TV Shows", "television-simple"),
+    ("music", "Music", "music-notes"),
+    ("games", "Games", "game-controller"),
     ("discover", "Discover", "compass"),
     ("favorites", "Favorites", "heart"),
     ("history", "Search history", "clock-counter-clockwise"),
@@ -128,7 +132,7 @@ class Sidebar(QFrame):
 
     def _credits_html(self) -> str:
         # Plain text on purpose: the app never sends the viewer out to a browser.
-        return "Live charts from Apple TV and TVmaze."
+        return "Live charts from Apple, TVmaze and FreeToGame."
 
     def restyle(self) -> None:
         if hasattr(self, "credits"):
@@ -138,7 +142,7 @@ class Sidebar(QFrame):
         self.set_active(self.window_.route.page if hasattr(self.window_, "route") else "home")
 
     def set_active(self, page: str) -> None:
-        active = {"details": None}.get(page, page)
+        active = {"details": None, "arcade": "games"}.get(page, page)
         for key, _text, glyph in NAV:
             b = self.items[key]
             on = key == active
@@ -276,6 +280,7 @@ class MainWindow(QMainWindow):
         session.play_trailer = self.play
         session.search = self.search
         session.go = lambda page: self.go(page)
+        session.play_game = lambda key: self.go("arcade", query=key)
 
         root = QWidget()
         root.setObjectName("root")
@@ -290,6 +295,10 @@ class MainWindow(QMainWindow):
         right.addWidget(self.topbar)
         self.stack = QStackedWidget()
         right.addWidget(self.stack, 1)
+        # Song previews play here while you keep browsing.
+        self.music_bar = MusicBar(session)
+        right.addWidget(self.music_bar)
+        session.play_song = self.music_bar.play
         row.addLayout(right, 1)
         self.setCentralWidget(root)
         # Trailers play in this same window, covering it like Netflix does.
@@ -331,6 +340,12 @@ class MainWindow(QMainWindow):
             return MoviesPage(s)
         if r.page == "tv":
             return TvPage(s)
+        if r.page == "music":
+            return MusicPage(s)
+        if r.page == "games":
+            return GamesPage(s)
+        if r.page == "arcade":
+            return ArcadePage(s, r.query, self.back)
         if r.page == "discover":
             return DiscoverPage(s, r.query, r.focus)
         if r.page == "favorites":
@@ -350,11 +365,14 @@ class MainWindow(QMainWindow):
             old.deleteLater()
         self.sidebar.set_active(r.page)
         names = {"details": r.title.title if r.title else "", "discover": "Discover", "favorites": "My Favorites",
-                 "history": "Search History", "movies": "Movies", "tv": "TV Shows"}
+                 "history": "Search History", "movies": "Movies", "tv": "TV Shows", "music": "Music", "games": "Games",
+                 "arcade": ARCADE.get(r.query, ("Games",))[0]}
         name = names.get(r.page)
         self.setWindowTitle(f"{name} | Cinevia" if name else "Cinevia")
         if r.page != "discover":
             self.topbar.input.clear()
+        if r.page == "arcade":
+            page.board.setFocus()  # arrow keys go to the game straight away
 
     # Actions
     def search(self, query: str) -> None:
@@ -364,6 +382,7 @@ class MainWindow(QMainWindow):
         self.topbar.input.setText(query)
 
     def play(self, title: Title) -> None:
+        self.music_bar.pause()  # one thing plays at a time
         self.player_view.open(title)
 
     def toggle_theme(self) -> None:
@@ -378,5 +397,6 @@ class MainWindow(QMainWindow):
         self._show(self.route)
 
     def log_out(self) -> None:
+        self.music_bar.stop()
         self.logged_out.emit()
 

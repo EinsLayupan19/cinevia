@@ -178,8 +178,8 @@ class PlayerView(QWidget):
 
     def open(self, title: Title) -> None:
         self.title = title
-        kind = "teaser" if title.kind == "tv" else "trailer"
-        self.small_name.setText(f"{title.title}  ·  Official {kind}")
+        kind = {"tv": "teaser", "game": "gameplay video"}.get(title.kind, "trailer")
+        self.small_name.setText(f"{title.title}  ·  Gameplay" if title.kind == "game" else f"{title.title}  ·  Official {kind}")
         # Start from a clean timeline, not the previous video's.
         self.seek.setRange(0, 0)
         self.seek.setValue(0)
@@ -217,8 +217,12 @@ class PlayerView(QWidget):
     def _no_video(self) -> None:
         self.player.stop()
         self._set_enabled(False)
-        kind = "teaser" if self.title and self.title.kind == "tv" else "trailer"
-        self._message(f"Apple TV has no {kind} for this title yet.\nPress Esc or the back arrow to return.")
+        if self.title and self.title.kind == "game":
+            text = "FreeToGame has no gameplay video for this game yet."
+        else:
+            kind = "teaser" if self.title and self.title.kind == "tv" else "trailer"
+            text = f"Apple TV has no {kind} for this title yet."
+        self._message(f"{text}\nPress Esc or the back arrow to return.")
         self._show_chrome()
 
     def _message(self, text: str) -> None:

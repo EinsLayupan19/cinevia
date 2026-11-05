@@ -1,4 +1,4 @@
-"""SQLite storage: user accounts, plus each user's favorites, search history and theme."""
+"""SQLite storage: user accounts, plus each user's favorites, search history, game scores and theme."""
 
 from __future__ import annotations
 
@@ -35,6 +35,15 @@ CREATE TABLE IF NOT EXISTS history (
     query       TEXT    NOT NULL COLLATE NOCASE,
     searched_at REAL    NOT NULL,
     PRIMARY KEY (user_id, query)
+);
+
+CREATE TABLE IF NOT EXISTS scores (
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    game       TEXT    NOT NULL,
+    best       INTEGER NOT NULL,
+    plays      INTEGER NOT NULL DEFAULT 0,
+    updated_at REAL    NOT NULL,
+    PRIMARY KEY (user_id, game)
 );
 """
 
@@ -129,6 +138,38 @@ def remove_search(conn: sqlite3.Connection, user_id: int, query: str) -> None:
 def clear_history(conn: sqlite3.Connection, user_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM history WHERE user_id = ?", (user_id,))
+
+
+# ---------- Arcade scores ----------
+
+
+def record_score(conn: sqlite3.Connection, user_id: int, game: str, score: int, mode: str = "max") -> tuple[int, bool]:
+    """Saves one finished game. ``mode`` says what "best" means: the highest score
+    ("max"), the fewest moves ("min") or a running total such as wins ("sum").
+    Returns the best after this game and whether this game improved it."""
+    row = conn.execute("SELECT best FROM scores WHERE user_id = ? AND game = ?", (user_id, game)).fetchone()
+    old = row["best"] if row else None
+    if mode == "sum":
+        best = (old or 0) + score
+    elif mode == "min":
+        best = score if old is None else min(old, score)
+    else:
+        best = score if old is None else max(old, score)
+    improved = old is None or best != old
+    with conn:
+        conn.execute(
+            """INSERT INTO scores (user_id, game, best, plays, updated_at) VALUES (?, ?, ?, 1, ?)
+               ON CONFLICT (user_id, game) DO UPDATE SET best = excluded.best, plays = plays + 1,
+               updated_at = excluded.updated_at""",
+            (user_id, game, best, time.time()),
+        )
+    return best, improved
+
+
+def best_scores(conn: sqlite3.Connection, user_id: int) -> dict[str, tuple[int, int]]:
+    """{game: (best, times played)} for one user."""
+    rows = conn.execute("SELECT game, best, plays FROM scores WHERE user_id = ?", (user_id,)).fetchall()
+    return {r["game"]: (r["best"], r["plays"]) for r in rows}
 
 
 # ---------- Preferences ----------

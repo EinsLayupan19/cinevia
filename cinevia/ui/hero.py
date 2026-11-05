@@ -33,7 +33,7 @@ def wide_art(t: Title) -> tuple[str, bool]:
     """Wide image URL, and whether it is a crop of the poster (shown softly blurred)."""
     if t.backdrop:
         return t.backdrop, False
-    if t.kind == "movie" and t.poster_large:
+    if t.kind in ("movie", "song") and t.poster_large:
         return artwork(t.poster_large, 1600, 900, "cc"), True
     return t.poster_large, True
 
@@ -56,7 +56,10 @@ def meta_row(t: Title) -> QWidget:
     runtime = format_runtime(t.runtime_min)
     if runtime:
         row.addWidget(label(f"{runtime} per episode" if t.kind == "tv" else runtime, "meta"))
-    row.addWidget(label(t.certification or ("SERIES" if t.kind == "tv" else "FILM"), "quality"))
+    if t.kind == "game":
+        row.addWidget(label("FREE TO PLAY", "quality"))
+    else:
+        row.addWidget(label(t.certification or ("SERIES" if t.kind == "tv" else "FILM"), "quality"))
     row.addStretch()
     return w
 

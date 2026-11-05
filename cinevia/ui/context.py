@@ -15,17 +15,22 @@ from cinevia.data.models import Title
 class Session(QObject):
     favorites_changed = Signal()
     history_changed = Signal()
+    scores_changed = Signal()
+    song_changed = Signal(str)  # id of the song now playing ("" when stopped)
 
     def __init__(self, conn: sqlite3.Connection, user: User) -> None:
         super().__init__()
         self.conn = conn
         self.user = user
         self._favorite_ids = {t["id"] for t in db.favorites(conn, user.id)}
+        self.now_playing: str | None = None
         # Set by the main window.
         self.open_title: Callable[[Title], None] = lambda t: None
         self.play_trailer: Callable[[Title], None] = lambda t: None
         self.search: Callable[[str], None] = lambda q: None
         self.go: Callable[[str], None] = lambda page: None
+        self.play_song: Callable[[Title, list[Title]], None] = lambda song, queue: None
+        self.play_game: Callable[[str], None] = lambda key: None
 
     # Favorites
     def is_favorite(self, title_id: str) -> bool:
@@ -59,6 +64,15 @@ class Session(QObject):
     def clear_history(self) -> None:
         db.clear_history(self.conn, self.user.id)
         self.history_changed.emit()
+
+    # Arcade scores
+    def best_scores(self) -> dict[str, tuple[int, int]]:
+        return db.best_scores(self.conn, self.user.id)
+
+    def record_score(self, game: str, score: int, mode: str = "max") -> tuple[int, bool]:
+        result = db.record_score(self.conn, self.user.id, game, score, mode)
+        self.scores_changed.emit()
+        return result
 
     # Preferences
     def theme(self) -> str:

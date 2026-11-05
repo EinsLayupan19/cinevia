@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from cinevia.data import catalog, itunes, tvmaze
+from cinevia.data import catalog, games, itunes, music, tvmaze
 from cinevia.data.catalog import Filters
 from cinevia.data.http import FetchError
 from cinevia.data.models import Title
@@ -26,12 +26,13 @@ from .hero import Backdrop, Hero, meta_row, wide_art
 from .images import images
 from .theme import theme
 from .widgets import (
+    ChipGroup,
     ClampLabel,
     EmptyState,
     Grid,
-    ChipGroup,
     Row,
     button,
+    card_size,
     chips,
     clear_layout,
     cover_pixmap,
@@ -104,6 +105,8 @@ class HomePage(Page):
         col.setSpacing(0)
         col.addWidget(row("Top 10 Movies This Week", session, itunes.top_movies, limit=10, see_all=lambda: session.go("movies")))
         col.addWidget(row("Trending TV Shows", session, tvmaze.trending_shows, see_all=lambda: session.go("tv")))
+        col.addWidget(row("Top Songs This Week", session, music.top_songs, card=card_size("song"), see_all=lambda: session.go("music")))
+        col.addWidget(row("Popular Free Games", session, games.all_games, card=card_size("game"), see_all=lambda: session.go("games")))
         col.addWidget(row("New Episodes Today", session, tvmaze.airing_today))
         col.addWidget(row("Action & Adventure", session, lambda: itunes.top_movies(4401)))
         col.addWidget(row("Science Fiction Series", session, shows_in("Science Fiction")))
@@ -199,7 +202,12 @@ class DetailsPage(Page):
         more = QWidget()
         mc = QVBoxLayout(more)
         mc.setContentsMargins(39, 5, 0, 60)
-        mc.addWidget(row("More Like This", session, lambda: catalog.more_like_this(title)))
+        mc.setSpacing(0)
+        if title.kind == "game":
+            self.shots = Row("Screenshots", session, card=card_size("game"))
+            self.shots.hide()
+            mc.addWidget(self.shots)
+        mc.addWidget(row("More Like This", session, lambda: catalog.more_like_this(title), card=card_size(title.kind)))
         self.body.addWidget(more)
 
     def eventFilter(self, obj, event) -> bool:
@@ -215,12 +223,22 @@ class DetailsPage(Page):
     def _enrich(self, extra: dict) -> None:
         self.title = self.title.with_details(extra)
         self._fill(self.title)
+        if self.title.kind == "game" and self.title.screenshots:
+            self._show_screenshots(self.title.screenshots)
         if extra.get("backdrop"):
             images().load(extra["backdrop"], lambda pix: self.hero.set_image(pix, False), owner=self)
 
+    def _show_screenshots(self, urls: list[str]) -> None:
+        clear_layout(self.shots.cards)
+        for url in urls:
+            self.shots.cards.addWidget(_Poster(url, card_size("game")))
+        self.shots.meta.setText(f"{len(urls)} from FreeToGame")
+        self.shots.show()
+
     def _fill(self, t: Title) -> None:
         clear_layout(self.content_row)
-        self.content_row.addWidget(_Poster(t.poster_large or t.poster, QSize(210, 315)), 0, Qt.AlignmentFlag.AlignBottom)
+        art = QSize(320, 180) if t.kind == "game" else QSize(210, 315)
+        self.content_row.addWidget(_Poster(t.poster_large or t.poster, art), 0, Qt.AlignmentFlag.AlignBottom)
         copy = QWidget()
         copy.setMaximumWidth(570)
         col = QVBoxLayout(copy)
@@ -238,7 +256,9 @@ class DetailsPage(Page):
         col.addSpacing(15)
         col.addWidget(ClampLabel(t.summary or "No synopsis yet.", "body", 4))
         facts = []
-        if t.credit:
+        if t.kind == "game":
+            facts += [f"{k}  <b>{v}</b>" for k, v in (("Publisher", t.credit), ("Developer", t.developer), ("Platform", t.platform)) if v]
+        elif t.credit:
             facts.append(f"{'Network' if t.kind == 'tv' else 'Director'}  <b>{t.credit}</b>")
         if t.cast:
             facts.append(f"Cast  <b>{', '.join(t.cast[:4])}</b>")
@@ -250,7 +270,7 @@ class DetailsPage(Page):
         col.addSpacing(22)
         actions = QHBoxLayout()
         actions.setSpacing(10)
-        play = button("Watch teaser" if t.kind == "tv" else "Watch trailer", "primary", "play", "#ffffff")
+        play = button({"tv": "Watch teaser", "game": "Watch gameplay"}.get(t.kind, "Watch trailer"), "primary", "play", "#ffffff")
         play.clicked.connect(lambda: self.session.play_trailer(t))
         actions.addWidget(play)
         # Look up the video now, so a title without one says so instead of
@@ -270,7 +290,7 @@ class DetailsPage(Page):
     def _trailer_checked(self, play: QPushButton, url: str | None) -> None:
         if not url:
             play.setEnabled(False)
-            play.setText("No teaser available" if self.title.kind == "tv" else "No trailer available")
+            play.setText({"tv": "No teaser available", "game": "No gameplay video yet"}.get(self.title.kind, "No trailer available"))
             play.setIcon(icon("play", "#ffffff"))
 
     def _sync_fav(self) -> None:
@@ -506,21 +526,39 @@ class FavoritesPage(Page):
 
     def refresh(self) -> None:
         favorites = self.session.favorites()
-        n = len(favorites)
-        self.subtitle.setText(f"{n} {'story' if n == 1 else 'stories'} saved for later.")
+        counts = [
+            (sum(t.kind in ("movie", "tv") for t in favorites), "movie or show", "movies and shows"),
+            (sum(t.kind == "song" for t in favorites), "song", "songs"),
+            (sum(t.kind == "game" for t in favorites), "game", "games"),
+        ]
+        parts = [f"{k} {one if k == 1 else many}" for k, one, many in counts if k]
+        self.subtitle.setText(f"{', '.join(parts)} saved for later." if parts else "Nothing saved yet.")
         clear_layout(self.rows)
         if not favorites:
             browse = button("Discover titles", "primary")
             browse.clicked.connect(lambda: self.session.go("discover"))
-            self.rows.addWidget(EmptyState("heart", "No favorites yet", "Tap the heart on any poster to save it here.", browse))
+            self.rows.addWidget(EmptyState("heart", "No favorites yet", "Tap the heart on any poster, song or game to save it here.", browse))
             return
         groups: dict[str, list[Title]] = {}
         for t in favorites:
-            groups.setdefault((catalog.buckets_of(t) or ["More Picks"])[0], []).append(t)
-        for genre, items in groups.items():
-            r = Row(genre, self.session, meta=f"{len(items)} {'title' if len(items) == 1 else 'titles'}", removable=True, limit=100)
-            r.set_items(items)
+            if t.kind == "song":
+                key = "Songs"
+            elif t.kind == "game":
+                key = "Games"
+            else:
+                key = (catalog.buckets_of(t) or ["More Picks"])[0]
+            groups.setdefault(key, []).append(t)
+        # Movies and shows first (by genre), then songs, then games.
+        order = sorted(groups, key=lambda g: {"Songs": 1, "Games": 2}.get(g, 0))
+        for genre in order:
+            items = groups[genre]
+            kind = items[0].kind
+            word = {"song": ("song", "songs"), "game": ("game", "games")}.get(kind, ("title", "titles"))
+            r = Row(genre, self.session, meta=f"{len(items)} {word[0] if len(items) == 1 else word[1]}", removable=True, limit=100, card=card_size(kind))
+            # Add the row to the page before filling it: a row with no parent
+            # would show itself as a separate window.
             self.rows.addWidget(r)
+            r.set_items(items)
 
 
 # ---------- History ----------

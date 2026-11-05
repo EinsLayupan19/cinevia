@@ -14,10 +14,12 @@ A Python desktop app for browsing trending **movies and TV shows** and watching 
 | Requirement | Where |
 |---|---|
 | 1. GUI with PyQt/PySide | PySide6 (Qt 6). Screens are in `cinevia/ui/`. |
-| 2a. SQLite for user data | `cinevia/db.py`: `users` table, plus each user's `favorites` and `history`. The file is `data/cinevia.db`. |
+| 2a. SQLite for user data | `cinevia/db.py`: `users` table, plus each user's `favorites`, `history` and game `scores`. The file is `data/cinevia.db`. |
 | 2b. Password hashing with `hashlib` | `cinevia/auth.py`: `hashlib.pbkdf2_hmac("sha256", ...)` with a random 16-byte salt per user and 600,000 iterations. Plain-text passwords are never stored. |
 | 2c. Login logic | `Accounts.login()`: looks up the username, re-hashes the typed password with the stored salt, and compares with `hmac.compare_digest`. |
-| 3A.1 Movies and TV Shows (plays on the UI, no redirect) | Home, Movies, TV Shows, Details, Discover (search and filters), Favorites, Search History, and an in-app trailer player (`cinevia/ui/player.py`, Qt Multimedia). |
+| 3A Media and Entertainment: Movies and TV Shows (plays on the UI, no redirect) | Home, Movies, TV Shows, Details, Discover (search and filters), Favorites, Search History, and an in-app trailer player (`cinevia/ui/player.py`, Qt Multimedia). |
+| 3A Media and Entertainment: Music | Music page with Apple Music's top songs, genre charts and song search. 30-second previews play in a mini player at the bottom of the window (`cinevia/ui/music.py`). |
+| 3A Media and Entertainment: Games | Three games you play inside the app (Snake, Memory Match, Tic-Tac-Toe), with best scores saved per user, plus a catalog of free-to-play games with details, screenshots and gameplay videos played in-app (`cinevia/ui/games.py`, `cinevia/arcade/`). |
 
 Extra security details:
 - The login error never says whether the username exists ("Incorrect username or password."). An unknown username still costs one hash, so response times match.
@@ -59,10 +61,12 @@ It is a normal account: the password is stored only as a salted PBKDF2 hash, and
 - **Sign in / Create account** screen with live poster art.
 - **Home**: a featured hero (01 / 05) with "Watch trailer" and "View details", plus rows for Top 10 movies, trending TV, today's new episodes and genres. Drag rows with the mouse, or use the edge arrows.
 - **Movies** and **TV Shows** pages with genre rows.
+- **Music**: the top 20 songs this week, rows for nine genres, and search by song or artist. Click any song to hear its 30-second preview in the mini player (play/pause, previous/next, seek, volume, favorite). It keeps playing while you browse and pauses when a trailer starts.
+- **Games**: play Snake, Memory Match or Tic-Tac-Toe (Easy or Hard computer) right in the window; your best score is saved to your account. Below them, about 400 free-to-play games by genre, each with a details page, screenshots and a gameplay video that plays in-app.
 - **Details**: blurred backdrop, poster, rating, runtime, genres, synopsis, director or network, cast, "More Like This", and add to favorites.
 - **Trailers**: official movie trailers and TV episode teasers play full-window inside the app, like Netflix (no pop-up window, never a browser). Controls hide while the video plays. When Apple has no teaser for a show, its Watch button says so instead of opening another site.
 - **Discover**: search as you type, and filter by type, genre, release year and rating or change the sort with a single click. Results update instantly, with no Apply button.
-- **Favorites** (grouped by genre) and **Search History** are saved per user in SQLite.
+- **Favorites** (movies and shows by genre, then songs, then games) and **Search History** are saved per user in SQLite.
 - **Dark and light mode**, remembered per user.
 - Keyboard: `Ctrl+K` focuses search, `Alt+Left` goes back. On a focused poster, `Enter` opens it and `F` toggles favorite. In the player: `Space` play/pause, `Left`/`Right` skip 10 seconds, `M` mute, `F` full screen, `Esc` back.
 
@@ -71,6 +75,8 @@ It is a normal account: the password is stored only as a salted PBKDF2 hash, and
 - Movies and trailers: Apple's iTunes Store charts (top movies overall and by genre).
 - TV shows: [TVmaze](https://www.tvmaze.com/api) (CC BY-SA), for posters, ratings, cast and backgrounds. "Trending" comes from Apple TV's top TV seasons chart.
 - TV teasers: the Apple TV preview of a show's latest season.
+- Music: Apple Music's top songs charts and the iTunes Search API, for cover art and 30-second previews.
+- Games: the [FreeToGame](https://www.freetogame.com/api-doc) API, for game art, details, screenshots and gameplay videos. Store links are left out on purpose: nothing opens a browser.
 
 API responses are cached in `data/http-cache/` for 2 hours and images in `data/image-cache/`, so the second launch is much faster. TVmaze can take a few seconds per request, so the first launch fills in over about half a minute.
 
@@ -80,7 +86,7 @@ API responses are cached in `data/http-cache/` for 2 hours and images in `data/i
 py -m unittest discover -s tests
 ```
 
-31 tests cover password hashing and verification, sign-up rules, unique usernames, login failures and lockout, per-user favorites, history and theme, the API parsers, and the Discover filters.
+49 tests cover password hashing and verification, sign-up rules, unique usernames, login failures and lockout, per-user favorites, history, theme and game scores, the API parsers (movies, TV, songs, games), the Discover filters, and the rules of Snake, Memory Match and Tic-Tac-Toe.
 
 ## Inspect the database
 
@@ -94,8 +100,9 @@ cinevia/
   auth.py               hashing, sign-up and login, lockout
   db.py                 SQLite schema and queries
   app.py                starts the app: login, then the main window
-  data/                 iTunes and TVmaze clients, caching, Discover filters
-  ui/                   theme, login, main window, pages, hero, player, cards
+  data/                 iTunes, TVmaze, music and FreeToGame clients, caching, Discover filters
+  arcade/               rules of the built-in games (no drawing, so they can be tested)
+  ui/                   theme, login, main window, pages, hero, player, music, games, cards
 assets/                 logo and the Geist font (SIL Open Font License)
 tests/                  unit tests
 ```

@@ -101,6 +101,18 @@ def get_json(url: str) -> object:
     raise FetchError("The server is busy. Try again in a moment.")
 
 
+def url_exists(url: str) -> bool:
+    """True when the server has the file (a HEAD request, so nothing is downloaded)."""
+    req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=20, context=_TLS) as res:
+            return 200 <= res.status < 300
+    except urllib.error.HTTPError:
+        return False
+    except (urllib.error.URLError, TimeoutError) as e:
+        raise FetchError("Couldn't reach the server. Check your connection.") from e
+
+
 def cached(key: str, load: Callable[[], T]) -> T:
     """Runs ``load`` once per key for half an hour; concurrent callers share one request."""
     with _guard:

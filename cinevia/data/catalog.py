@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from datetime import date
 
-from . import itunes, tvmaze
+from . import games, itunes, music, tvmaze
 from .http import FetchError, cached
 from .models import Title
 from .util import unique_by
@@ -93,6 +93,10 @@ def discover_pool(query: str) -> list[Title]:
 
 
 def details(t: Title) -> dict:
+    if t.kind == "game":
+        return games.game_details(t.source_id)
+    if t.kind == "song":
+        return {}
     return itunes.movie_details(t.source_id) if t.kind == "movie" else tvmaze.show_details(t.source_id)
 
 
@@ -109,6 +113,8 @@ def title_by_id(title_id: str) -> Title | None:
 
 
 def more_like_this(t: Title) -> list[Title]:
+    if t.kind == "game":
+        return games.more_like(t)
     pool = movie_library() if t.kind == "movie" else tvmaze.show_library()
     mine = set(buckets_of(t))
     scored = [(len(mine & set(buckets_of(o))), o) for o in pool if o.id != t.id]
@@ -118,7 +124,12 @@ def more_like_this(t: Title) -> list[Title]:
 
 
 def resolve_trailer(t: Title) -> str | None:
-    """Official trailer for a movie, or an Apple TV episode preview for a show."""
+    """Official trailer for a movie, an Apple TV episode preview for a show,
+    or FreeToGame's gameplay clip for a game."""
+    if t.kind == "game":
+        return games.video_url(t.source_id)
+    if t.kind == "song":
+        return t.trailer
     if t.kind == "movie":
         return t.trailer or itunes.movie_details(t.source_id).get("trailer")
     return itunes.tv_teaser(t.title, t.itunes_collection_id)
@@ -187,7 +198,8 @@ def warm_up() -> None:
     """Loads the shared catalog in the background (called while the login screen is up)."""
     from concurrent.futures import ThreadPoolExecutor
 
-    jobs = [itunes.top_movies, tvmaze.trending_shows, tvmaze.airing_today, movie_library, tvmaze.show_library]
+    jobs = [itunes.top_movies, tvmaze.trending_shows, tvmaze.airing_today, movie_library, tvmaze.show_library,
+            music.top_songs, games.all_games]
     with ThreadPoolExecutor(max_workers=len(jobs)) as pool:
         for future in [pool.submit(job) for job in jobs]:
             try:
